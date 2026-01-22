@@ -8,7 +8,9 @@
         "stronaTarcz": "top",
         "host": "localhost",
         "port": 5001,
-        "trybBezpieczny(WSS)": false
+        "trybBezpieczny(WSS)": false,
+        "lineEnd": "\r\n"
+        
     },
     "_comment": "Wartosci poszczegolnych elementow musza byc potegami liczby 2 (1,2,4,8,16,32,64,128...) one idą pokoleji jak kolory kabli",
     "zwrotnice": {

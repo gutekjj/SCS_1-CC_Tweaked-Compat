@@ -13,7 +13,7 @@ local function readConfig(path)
     return (ok and type(cfg) == "table") and cfg or {}
 end
 
-local function checkDetectors(ws, settings, detectors)
+local function checkDetectors(ws, settings, detectors, lineEnd)
     print("Checking detectors...")
     for key, detector in pairs(detectors) do
         print("Checking detector: " .. key)
@@ -26,7 +26,7 @@ local function checkDetectors(ws, settings, detectors)
         else
             message = "w"
         end
-        ws.send(key .. ":" .. message .. "\r\n")
+        ws.send(key .. ":" .. message .. lineEnd)
     end
 end
 
@@ -37,7 +37,7 @@ local function stringContains(haystack, needle)
     return string.find(haystack, needle, 1, true) ~= nil
 end
 
-local function checkCrossings(ws, settings, crossings)
+local function checkCrossings(ws, settings, crossings, lineEnd)
     print("Checking crossings...")
     for key, crossing in pairs(crossings) do
         print("Checking crossing: " .. key)
@@ -52,13 +52,14 @@ local function checkCrossings(ws, settings, crossings)
 
         if not signalL then messageL = "_RgL:otwarte" end
 
-        ws.send(key .. messageP .. "\r\n")
-        ws.send(key .. messageL .. "\r\n")
+        ws.send(key .. messageP .. lineEnd)
+        ws.send(key .. messageL .. lineEnd)
     end
 end
 
 local cfg = readConfig("config.json")
 local settings = (type(cfg) == "table" and cfg.ustawienia) and cfg.ustawienia or {}
+local lineEnd = settings.lineEnd or "\r\n"
 local port = settings.port or cfg.port or cfg.websocketPort or 8080
 local host = settings.host or cfg.host or "localhost"
 local secure = (settings["trybBezpieczny(WSS)"] or cfg["trybBezpieczny(WSS)"]) and true or false
@@ -78,22 +79,22 @@ rs.setBundledOutput(settings.stronaTarcz or "top", 0)
 local ws, error = http.websocket(url)
 if ws then
     os.sleep(1) -- Wait a moment to ensure connection is established
-    ws.send("Ready:" .. settings.skrotStacji .. "\r\n")
+    ws.send("Ready:" .. settings.skrotStacji .. lineEnd)
     os.sleep(0.5)
-    checkDetectors(ws, settings, detectors)
+    checkDetectors(ws, settings, detectors, lineEnd)
     for i in pairs(przejazdy) do
-        ws.send(przejazdy[i].name .. "_RgP:otwarte\r\n")
+        ws.send(przejazdy[i].name .. "_RgP:otwarte" .. lineEnd)
         os.sleep(0.2)
-        ws.send(przejazdy[i].name .. "_RgL:otwarte\r\n")
+        ws.send(przejazdy[i].name .. "_RgL:otwarte" .. lineEnd)
         os.sleep(0.2)
-        ws.send(przejazdy[i].name .. "_SD:otwarte\r\n")
+        ws.send(przejazdy[i].name .. "_SD:otwarte" .. lineEnd)
     end
-    checkDetectors(ws, settings, detectors)
+    checkDetectors(ws, settings, detectors, lineEnd)
     while true do
         local eventData = {os.pullEvent()}
         if eventData[1] == "websocket_message" and stringContains(tostring(eventData[3]), "GetState") then
             print("Received GetState command, checking detectors...")   
-            checkDetectors(ws, settings, detectors)
+            checkDetectors(ws, settings, detectors, lineEnd)
             print("Message processed.")
         elseif eventData[1] == "websocket_message" and stringContains(tostring(eventData[3]), "zamykaj") then
             print("Received command: " .. tostring(eventData[3]))
@@ -112,7 +113,7 @@ if ws then
                     elseif stringContains(tostring(eventData[3]), przejazdy[i].name .. "_SD") then
                         currentCable = bit.bor(currentCable, przejazdy[i].SD)
                         rs.setBundledOutput(settings.stronaPrzejazdow or "top", colors.combine(currentCable, przejazdy[i].SD))
-                        ws.send(przejazdy[i].name .. "_SD:zamkniete\r\n")
+                        ws.send(przejazdy[i].name .. "_SD:zamkniete" .. lineEnd)
                         print("Set " .. przejazdy[i].name .. "_SD to zamkniete")
                         os.sleep(0.2)
                     end
@@ -134,7 +135,7 @@ if ws then
     
                     if stringContains(tostring(eventData[3]), przejazdy[i].name .. "_SD") then
                         rs.setBundledOutput(settings.stronaPrzejazdow or "top", colors.subtract(currentCable, przejazdy[i].SD))
-                        ws.send(przejazdy[i].name .. "_SD:otwarte\r\n")
+                        ws.send(przejazdy[i].name .. "_SD:otwarte" .. lineEnd)
                         print("Set " .. przejazdy[i].name .. "_SD to otwarte")
                         os.sleep(0.2)
                     end
@@ -149,14 +150,14 @@ if ws then
                         rs.setBundledOutput(settings.stronaZwrotnic or "right", colors.combine(currentCable, zwrotnice[i]))
                         print("Set zwrotnica " .. i .. " to -")
                         os.sleep(5)
-                        ws.send(i .. ":-\r\n")
+                        ws.send(i .. ":-" .. lineEnd)
                         break
                     elseif stringContains(tostring(eventData[3]), i .. ":+") then
                         print("setting zwrotnica " .. i .. " to +")
                         rs.setBundledOutput(settings.stronaZwrotnic or "right", colors.subtract(currentCable, zwrotnice[i]))
                         print("Set zwrotnica " .. i .. " to +")
                         os.sleep(5)
-                        ws.send(i .. ":+\r\n")
+                        ws.send(i .. ":+" .. lineEnd)
                         break
                     end
                 end
@@ -173,7 +174,7 @@ if ws then
                         rs.setBundledOutput(settings.stronaTarcz or "top", colors.combine(currentCable, tarcze[tarczaManewrowa]))
                         print("Set tarcza: " .. tarczaManewrowa .. " to Ms2")
                         os.sleep(1)
-                        ws.send(tarczaManewrowa .. ":Ms2\r\n")
+                        ws.send(tarczaManewrowa .. ":Ms2" .. lineEnd)
                         break
                     elseif stringContains(tostring(eventData[3]), i .. ":Ms1") then
                         local tarczaManewrowa = i
@@ -181,23 +182,23 @@ if ws then
                         rs.setBundledOutput(settings.stronaTarcz or "top", colors.subtract(currentCable, tarcze[tarczaManewrowa]))
                         print("Set tarcza: " .. tarczaManewrowa .. " to Ms1")
                         os.sleep(1)
-                        ws.send(tarczaManewrowa .. ":Ms1\r\n")
+                        ws.send(tarczaManewrowa .. ":Ms1" .. lineEnd)
                         break
                     elseif stringContains(tostring(eventData[3]), i .. ":Os1")then
                         local tarczaOstrzegawcza =  i
                         print("Setting tarcza: " .. tarczaOstrzegawcza .. " to Os1")
-                        rs.setBundledOutput(settings.stronaTarcz or "top", colors.combine(currentCable, 0))
+                        rs.setBundledOutput(settings.stronaTarcz or "top", colors.subtract(currentCable, tarcze[tarczaOstrzegawcza].Os2 or tarcze[tarczaOstrzegawcza].Os3 or tarcze[tarczaOstrzegawcza].Os4))
                         print("Set tarcza: " .. tarczaOstrzegawcza .. " to Os1")
                         os.sleep(1)
-                        ws.send(tarczaOstrzegawcza .. ":Os1\r\n")
+                        ws.send(tarczaOstrzegawcza .. ":Os1" .. lineEnd)
                         break
                     elseif stringContains(tostring(eventData[3]), i .. ":Os2")then
                         local tarczaOstrzegawcza = i
                         print("Setting tarcza: " .. tarczaOstrzegawcza .. " to Os2")
-                        rs.setBundledOutput(settings.stronaTarcz or "top", colors.subtract(currentCable, tarcze[tarczaOstrzegawcza].Os2))
+                        rs.setBundledOutput(settings.stronaTarcz or "top", colors.combine(currentCable, tarcze[tarczaOstrzegawcza].Os2))
                         print("Set tarcza: " .. tarczaOstrzegawcza .. " to Os2")
                         os.sleep(1)
-                        ws.send(tarczaOstrzegawcza .. ":Os2\r\n")
+                        ws.send(tarczaOstrzegawcza .. ":Os2" .. lineEnd)
                         break
                     elseif stringContains(eventData[3], i .. ":Os3") then
                         local tarczaOstrzegawcza = i
@@ -206,21 +207,21 @@ if ws then
                         rs.setBundledOutput(settings.stronaTarcz or "top", colors.combine(currentCable, tarcze[tarczaOstrzegawcza].Os3))
                         print("Set tarcza: " .. tarczaOstrzegawcza .. " to Os3")
                         os.sleep(1)
-                        ws.send(tarczaOstrzegawcza .. ":Os3\r\n")
+                        ws.send(tarczaOstrzegawcza .. ":Os3" .. lineEnd)
                         break
                     elseif stringContains(eventData[3], i .. ":Os4") then
                         local tarczaOstrzegawcza = i
                         print("Setting tarcza: " .. tarczaOstrzegawcza .. " to Os4")
-                        rs.setBundledOutput(settings.stronaTarcz or "top", colors.subtract(currentCable, tarcze[tarczaOstrzegawcza].Os4))
+                        rs.setBundledOutput(settings.stronaTarcz or "top", colors.combine(currentCable, tarcze[tarczaOstrzegawcza].Os4))
                         print(tarcze[tarczaOstrzegawcza].Os4)
                         print("Set tarcza: " .. tarczaOstrzegawcza .. " to Os4")
                         os.sleep(1)
-                        ws.send(tarczaOstrzegawcza .. ":Os4\r\n")
+                        ws.send(tarczaOstrzegawcza .. ":Os4" .. lineEnd)
                         break
                     end
                 end
             end
-        elseif eventData[1] == "websocket_message" and stringContains(tostring(eventData[3]), "S") then
+        elseif eventData[1] == "websocket_message" and stringContains(tostring(eventData[3]), "S") or stringContains(tostring(eventData[3]), "Ms2") then
             for i in pairs(semafory) do
                 if stringContains(tostring(eventData[3]), i) then
                     local currentCable = rs.getBundledOutput(settings.stronaSemaforow or "left")
@@ -230,23 +231,34 @@ if ws then
                             rs.setBundledOutput(settings.stronaSemaforow or "left", colors.combine(currentCable, cable))
                             print("Set semafor: " .. i .. " to " .. signal)
                             os.sleep(1)
-                            ws.send(i .. ":" .. signal .. "\r\n")
+                            ws.send(i .. ":" .. signal .. lineEnd)
                             break
-                        elseif stringContains(tostring(eventData[3]), i .. ":S1") then
+                        elseif stringContains(tostring(eventData[3]), i .. ":S1") and not stringContains(tostring(eventData[3]), i .. ":S10") or stringContains(tostring(eventData[3]), i .. ":S11") or stringContains(tostring(eventData[3]), i .. ":S12") or stringContains(tostring(eventData[3]), i .. ":S13") then
+                            
+                            print(semafory[i].Sz)
                             print("Setting semafor: " .. i .. " to S1")
-                            rs.setBundledOutput(settings.stronaSemaforow or "left", 0)
+                            for cableSignal, cableValue in pairs(semafory[i]) do
+                                local currentCable = rs.getBundledOutput(settings.stronaSemaforow or "left")
+                                if colors.test(currentCable, cableValue) then
+                                    print("Removing signal: " .. cableValue)
+                                    rs.setBundledOutput(settings.stronaSemaforow or "left", colors.subtract(currentCable, cableValue))
+                                end
+                            end
                             print("Set semafor: " .. i .. " to S1")
                             os.sleep(1)
-                            ws.send(i .. ":S1\r\n")
+                            ws.send(i .. ":S1" .. lineEnd)
                             break
                         end
                     end
+                
                 end
             end
+
+
         elseif eventData[1] == "redstone" then
             print("Redstone event detected, checking detectors...")
-            checkDetectors(ws, settings, detectors)
-            checkCrossings(ws, settings, przejazdy)
+            checkDetectors(ws, settings, detectors, lineEnd)
+            checkCrossings(ws, settings, przejazdy, lineEnd)
             print("Redstone event processed.")
         end
 
