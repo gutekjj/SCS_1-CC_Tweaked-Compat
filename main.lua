@@ -78,7 +78,7 @@ rs.setBundledOutput(settings.stronaTarcz or "top", 0)
 local ws, error = http.websocket(url)
 if ws then
     os.sleep(1) -- Wait a moment to ensure connection is established
-    ws.send("Ready:Gt\r\n")
+    ws.send("Ready:" .. settings.skrotStacji .. "\r\n")
     os.sleep(0.5)
     checkDetectors(ws, settings, detectors)
     for i in pairs(przejazdy) do

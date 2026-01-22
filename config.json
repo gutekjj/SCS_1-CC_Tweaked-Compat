@@ -1,5 +1,6 @@
 {
     "ustawienia": {
+        "skrotStacji": "Gt",
         "stronaSemaforow": "left",
         "stronaZwrotnic": "right",
         "stronaDetektorow": "bottom",
