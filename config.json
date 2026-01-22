@@ -1,0 +1,67 @@
+{
+    "ustawienia": {
+        "stronaSemaforow": "left",
+        "stronaZwrotnic": "right",
+        "stronaDetektorow": "bottom",
+        "stronaPrzejazdow": "back",
+        "stronaTarcz": "top",
+        "host": "localhost",
+        "port": 5001,
+        "trybBezpieczny(WSS)": false
+    },
+    "_comment": "Wartosci poszczegolnych elementow musza byc potegami liczby 2 (1,2,4,8,16,32,64,128...) one idą pokoleji jak kolory kabli",
+    "zwrotnice": {
+        "1": 1,
+        "2": 2
+    },
+    "semafory": {
+        "A": {
+            "S5": 1,
+            "S13": 2,
+            "Sz": 256
+        },
+        "B": {
+            "S2": 4,
+            "Ms2": 8,
+            "Sz": 512
+        },
+        "C": {
+            "S10": 16,
+            "Ms2": 32,
+            "Sz": 1024
+        },
+        "D": {
+            "Ms2": 64
+        },
+        "E": {
+            "Ms2": 128
+        }    
+    },
+    "tarcze": {
+        "ToA": {
+            "Os2": 1,
+            "Os4": 2
+        },
+        "Tm1": 4,
+        "Tm2": 8
+    },
+    "przejazdy": {
+        "P123": {
+            "name": "P123",
+            "SD": 1,
+            "RgP": 2,
+            "RgL": 4,
+            "RgPzamkniete": 8,
+            "RgLzamkniete": 16
+        }
+    },
+    "Detektory": {
+        "Gt_It1L": {"kabel": 1},
+        "Gt_ItA": {"kabel": 2},
+        "Gt_Iz1": {"kabel": 4},
+        "Gt_It1": {"kabel": 8},
+        "Gt_It2": {"kabel": 16},
+        "Gt_Iz2": {"kabel": 32},
+        "Gt_It2L": {"kabel": 64}
+    }
+}
